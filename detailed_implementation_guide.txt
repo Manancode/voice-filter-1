@@ -1,0 +1,129 @@
+DETAILED IMPLEMENTATION GUIDE: CONVOIFILTER ONNX CONVERSION JOURNEY
+
+## WHAT WE'VE DONE SO FAR:
+
+### 1. INITIAL SETUP (Cloud Jupyter Notebook)
+- Created isolated Python virtual environment (venv) to avoid dependency conflicts
+- Installed specific package versions:
+  - torch==1.13.1+cpu
+  - torchaudio==0.13.1+cpu  
+  - transformers==4.21.0
+  - numpy==1.24.3
+  - scipy==1.10.1
+  - espnet==202304
+  - espnet-model-zoo
+  - typeguard==2.13.3
+  - asteroid-filterbanks
+  - asteroid
+
+### 2. MODEL LOADING
+- Downloaded ConVoiFilter model from HuggingFace: nguyenvulebinh/voice-filter
+- Successfully loaded the PyTorch model locally due to network issues
+- Model loaded successfully with all dependencies
+
+### 3. ONNX CONVERSION ATTEMPTS
+- Created custom ONNX wrapper classes (ONNXCompatibleVoiceFilter, ONNXCompatibleXVector)
+- Successfully exported XVector model to ONNX (works fine)
+- Attempted main VoiceFilter model export with dynamic axes
+- Export completed but with hardcoded attention mask dimensions
+
+### 4. PROBLEM IDENTIFIED
+- ONNX model has hardcoded constants with shape [1, 1, 1, 1000] for attention masks
+- These are in nodes like: /separator/conformer/encoders/encoders.0/self_attn/Constant_45
+- When testing with real audio (4627 time steps), broadcasting error occurs:
+  "Attempting to broadcast an axis by a dimension other than 1. 1000 by 4627"
+
+### 5. RESEARCH CONDUCTED
+- Comprehensive research revealed this is a known issue with Conformer ONNX export
+- ESPnet community has developed specialized `espnet-onnx` library to solve this
+- Root cause: PyTorch tracing limitations + Conformer's complex attention mechanism
+
+## CURRENT STATUS:
+- ✅ XVector model: Successfully converted to ONNX, works perfectly
+- ❌ Main VoiceFilter model: Converted but has hardcoded attention masks
+- ❌ Cannot handle variable sequence lengths due to broadcasting errors
+
+## NEXT STEPS - IMPLEMENT ESPNET-ONNX SOLUTION:
+
+### STEP 1: Install ESPnet-ONNX
+```python
+# In your cloud notebook, activate venv first
+!source voicefilter-venv/bin/activate
+!pip install espnet-onnx
+```
+
+### STEP 2: Use ESPnet-ONNX for Conversion
+```python
+from espnet_onnx.export import ASRModelExport
+
+# Create export instance
+m = ASRModelExport()
+
+# Configure for voice filter (not ASR, but similar process)
+m.set_export_config(max_seq_len=8000)  # Set reasonable max length
+
+# Export the model
+# Note: May need to adapt for voice filter specifically
+m.export_from_pretrained('nguyenvulebinh/voice-filter', quantize=True)
+```
+
+### STEP 3: Alternative - Custom ESPnet-ONNX Implementation
+If the above doesn't work directly for voice filter, we need to:
+
+```python
+# Custom implementation based on ESPnet-ONNX principles
+from espnet_onnx.export.models import get_model
+from espnet_onnx.utils.config import Config
+
+# Create custom config for voice filter
+config = Config(
+    model_type="voice_filter",
+    max_seq_len=8000,
+    use_attention_mask=True,
+    use_dynamic_attention=True
+)
+
+# Custom export function
+def export_voice_filter_with_espnet_onnx():
+    # Load original model
+    model = VoiceFilter.from_pretrained('./cache/models--nguyenvulebinh--voice-filter/snapshots/main')
+    
+    # Apply ESPnet-ONNX modifications
+    # This will replace problematic attention mask functions
+    # with ONNX-compatible versions
+    
+    # Export with ESPnet-ONNX handling
+    pass
+```
+
+## WHAT ESPNET-ONNX DOES:
+1. **Replaces `make_pad_mask`** with ONNX-compatible implementation
+2. **Handles dynamic sequence lengths** properly
+3. **Removes problematic `extend_pe()`** from positional encoding
+4. **Sets reasonable PE length** (512 by default) instead of dynamic
+5. **Fixes attention mask hardcoding** issues automatically
+
+## EXPECTED OUTCOME:
+- ✅ ONNX model that handles variable sequence lengths
+- ✅ No more broadcasting errors
+- ✅ Works with real audio of any length
+- ✅ Maintains model accuracy
+
+## FALLBACK OPTIONS:
+If ESPnet-ONNX doesn't work directly for voice filter:
+
+1. **Custom attention mask implementation**
+2. **Model architecture modification**
+3. **Pre/post processing approach**
+4. **Alternative voice filter models**
+
+## FILES WE HAVE:
+- `voice_filter_main_dynamic_fixed.onnx` (current broken model)
+- `xvector_model.onnx` (working XVector model)
+- `fixed_advanced_onnx_converter.py` (our current converter)
+- Local model cache with PyTorch weights
+
+## NEXT ACTION NEEDED:
+Implement ESPnet-ONNX solution in cloud notebook to fix the attention mask hardcoding issue and get a working ONNX model for Android deployment.
+
+The key insight is that ESPnet-ONNX was specifically designed to solve this exact problem with ESPnet models like ConVoiFilter. 

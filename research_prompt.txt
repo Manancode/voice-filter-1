@@ -1,0 +1,113 @@
+COMPREHENSIVE RESEARCH PROMPT FOR ONNX CONFORMER ATTENTION MASK HARDCODING ISSUE
+
+CONTEXT:
+I am converting a PyTorch Conformer-based voice filter model (ConVoiFilter) to ONNX format for Android deployment. The model is from HuggingFace: nguyenvulebinh/voice-filter. The model uses a Conformer architecture with attention mechanisms.
+
+CURRENT PROBLEM:
+During ONNX export, the attention masks in the Conformer's self-attention layers are being hardcoded with fixed dimensions (1000 time steps) instead of being dynamic. This causes broadcasting errors when trying to run the ONNX model with different input sequence lengths.
+
+SPECIFIC ERROR:
+RuntimeException: ... Where node. ... Attempting to broadcast an axis by a dimension other than 1. 1000 by 4627
+
+TECHNICAL DETAILS:
+- Model: Conformer-based voice filter with 4 encoder layers
+- ONNX export shows constants with shape [1, 1, 1, 1000] for attention masks
+- These are in nodes like: /separator/conformer/encoders/encoders.0/self_attn/Constant_45
+- The Where nodes in attention mechanism are trying to broadcast between hardcoded 1000 and actual sequence length (e.g., 4627)
+- Using PyTorch 1.13.1, ONNX opset 17, dynamic_axes properly set
+
+WHAT I NEED TO RESEARCH:
+
+1. **ONNX Conformer Attention Mask Issues:**
+   - Search for "ONNX export Conformer transformer attention mask hardcoded dimensions"
+   - "PyTorch Conformer ONNX export attention mask dynamic sequence length"
+   - "ESPnet Conformer ONNX export attention mask issue"
+   - "Conformer attention mask ONNX broadcasting error"
+
+2. **Solutions for Dynamic Attention Masks:**
+   - "ONNX export transformer attention mask dynamic"
+   - "PyTorch attention mask ONNX export variable sequence length"
+   - "Conformer ONNX export fix attention mask hardcoding"
+   - "ONNX export custom attention mask implementation"
+
+3. **ESPnet-Specific Solutions:**
+   - "ESPnet Conformer ONNX export solutions"
+   - "ESPnet attention mask ONNX compatibility"
+   - "ESPnet model ONNX export best practices"
+
+4. **Alternative Approaches:**
+   - "ONNX export transformer without attention mask"
+   - "Conformer ONNX export simplified attention"
+   - "ONNX export attention mechanism workarounds"
+
+5. **Code-Level Fixes:**
+   - "PyTorch attention mask dynamic implementation"
+   - "Conformer attention mask source code modification"
+   - "ESPnet attention mask code changes for ONNX"
+
+6. **Research Papers and Solutions:**
+   - "Conformer ONNX export research papers"
+   - "Transformer ONNX export attention mask solutions"
+   - "Dynamic attention mask ONNX compatibility"
+
+7. **Community Solutions:**
+   - "GitHub issues Conformer ONNX export attention mask"
+   - "Stack Overflow Conformer ONNX attention mask"
+   - "ONNX Runtime Conformer attention mask issues"
+
+8. **Alternative Model Architectures:**
+   - "Voice filter models without Conformer ONNX"
+   - "Alternative attention mechanisms ONNX compatible"
+   - "Voice separation models ONNX export"
+
+SPECIFIC QUESTIONS TO ANSWER:
+
+1. **What causes attention masks to be hardcoded during ONNX export?**
+   - Is this a PyTorch tracing limitation?
+   - Is this specific to Conformer architecture?
+   - Are there known workarounds?
+
+2. **How to make attention masks dynamic in ONNX export?**
+   - Code modifications needed?
+   - Alternative attention implementations?
+   - ONNX export techniques?
+
+3. **Are there existing solutions for this exact problem?**
+   - GitHub repositories with fixes?
+   - Research papers with solutions?
+   - Community discussions?
+
+4. **Can this be fixed without changing the model architecture?**
+   - ONNX export parameter changes?
+   - PyTorch version changes?
+   - Custom export functions?
+
+5. **What are the trade-offs of different solutions?**
+   - Performance impact?
+   - Model accuracy changes?
+   - Implementation complexity?
+
+6. **Are there alternative voice filter models that work better with ONNX?**
+   - Models with simpler attention mechanisms?
+   - Models already optimized for ONNX?
+   - Models with similar performance but better ONNX compatibility?
+
+7. **What's the best approach for production deployment?**
+   - Should we fix the current model?
+   - Should we switch to a different model?
+   - Should we use a different export strategy?
+
+8. **Are there any official ESPnet solutions?**
+   - ESPnet ONNX export tools?
+   - ESPnet documentation on this issue?
+   - ESPnet community solutions?
+
+PLEASE PROVIDE:
+- Specific code examples and solutions
+- Links to relevant GitHub repositories, research papers, and discussions
+- Step-by-step implementation guides
+- Pros and cons of each approach
+- Recommendations for the best solution
+- Any additional resources or tools that might help
+
+This is for a production Android application, so the solution needs to be robust and well-tested. 
